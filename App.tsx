@@ -95,8 +95,8 @@ const App: React.FC = () => {
           <div className="absolute inset-0 bg-deepak-accent rounded-full blur-[20px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
           <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full p-[2px] bg-gradient-to-b from-deepak-accent to-transparent">
              <div className="w-full h-full rounded-full overflow-hidden bg-black">
-                <img 
-                  src="deepak.jpg" 
+                <img
+                  src="/deepak.jpg"
                   alt="Deepak the Mystic" 
                   className="w-full h-full object-cover object-top hover:scale-110 transition-transform duration-700 ease-in-out opacity-90 hover:opacity-100"
                   onError={(e) => {
