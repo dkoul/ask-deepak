@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, FormEvent } from 'react';
 import { ChatMessage, ChatStatus } from '../types';
-import { askAboutDeepak, getSuggestedQuestions } from '../services/chatService';
+import { askAboutDeepak, ChatApiError, getSuggestedQuestions } from '../services/chatService';
 import { ChatMessageBubble } from './ChatMessageBubble';
+import { useRecaptcha } from '../hooks/useRecaptcha';
 
 const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    "Hi! I'm Deepak's resume assistant. Ask me anything about his experience, skills, community work, or how to get in touch.",
+    "Hi! Ask me anything about Deepak's experience, skills, achievements, or how to get in touch.",
   timestamp: Date.now(),
 };
 
@@ -20,13 +21,20 @@ function createMessage(role: 'user' | 'assistant', content: string): ChatMessage
   };
 }
 
-export const ChatInterface: React.FC = () => {
+interface ChatInterfaceProps {
+  embedded?: boolean;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ embedded = false }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
+  const [captchaError, setCaptchaError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestedQuestions = getSuggestedQuestions();
+  const { config, isReady, loadError, containerRef, getToken, reset, isRequired } =
+    useRecaptcha();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,6 +44,28 @@ export const ChatInterface: React.FC = () => {
     e.preventDefault();
     const question = input.trim();
     if (!question || status === ChatStatus.LOADING) return;
+
+    if (isRequired && !isReady) {
+      setCaptchaError('Captcha is still loading. Please wait a moment.');
+      return;
+    }
+
+    setCaptchaError(null);
+
+    let captchaToken: string | null = null;
+    if (isRequired) {
+      try {
+        captchaToken = await getToken();
+      } catch {
+        setCaptchaError('Captcha failed. Please try again.');
+        return;
+      }
+
+      if (!captchaToken) {
+        setCaptchaError('Please complete the captcha before sending.');
+        return;
+      }
+    }
 
     const userMessage = createMessage('user', question);
     setMessages((prev) => [...prev, userMessage]);
@@ -47,17 +77,23 @@ export const ChatInterface: React.FC = () => {
       .map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const answer = await askAboutDeepak(question, history);
+      const answer = await askAboutDeepak(question, history, captchaToken);
       setMessages((prev) => [...prev, createMessage('assistant', answer)]);
       setStatus(ChatStatus.IDLE);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        createMessage(
-          'assistant',
-          "Sorry, I couldn't process that request. Please try again or reach out to Deepak directly via LinkedIn."
-        ),
-      ]);
+      reset();
+    } catch (err) {
+      reset();
+
+      const message =
+        err instanceof ChatApiError
+          ? err.message
+          : "Sorry, I couldn't process that. Try again or reach out via LinkedIn.";
+
+      if (err instanceof ChatApiError && err.status === 403) {
+        setCaptchaError(message);
+      }
+
+      setMessages((prev) => [...prev, createMessage('assistant', message)]);
       setStatus(ChatStatus.ERROR);
       setTimeout(() => setStatus(ChatStatus.IDLE), 2000);
     }
@@ -68,23 +104,33 @@ export const ChatInterface: React.FC = () => {
     inputRef.current?.focus();
   };
 
+  const wrapperClass = embedded
+    ? 'flex flex-col h-full min-h-[460px]'
+    : 'flex flex-col h-full min-h-[420px] md:min-h-[480px] bg-bento-card border border-white/[0.06] rounded-[28px]';
+
+  const showV2Widget = isRequired && config?.version === 'v2';
+
   return (
-    <section className="flex flex-col h-full min-h-[420px] md:min-h-[480px] bg-surface-elevated border border-slate-800">
-      <header className="px-5 py-4 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-        <div>
-          <h2 className="text-white font-display text-lg">Ask About Deepak</h2>
-          <p className="text-slate-500 text-xs font-mono">AI-powered resume assistant</p>
+    <section className={wrapperClass}>
+      <header className="px-5 py-4 flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20">
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-violet-300">
+            AI Assistant
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-white font-bold text-base truncate">Ask About Deepak</h2>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 chat-scroll">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 chat-scroll min-h-0">
         {messages.map((message) => (
           <ChatMessageBubble key={message.id} message={message} />
         ))}
         {status === ChatStatus.LOADING && (
           <div className="flex justify-start animate-fade-in">
-            <div className="px-4 py-3 bg-surface-elevated border border-slate-800 text-slate-400 text-sm font-mono">
+            <div className="px-4 py-2.5 rounded-2xl bg-white/[0.05] text-zinc-500 text-sm">
               <span className="inline-flex gap-1">
                 <span className="animate-bounce" style={{ animationDelay: '0ms' }}>·</span>
                 <span className="animate-bounce" style={{ animationDelay: '150ms' }}>·</span>
@@ -97,13 +143,13 @@ export const ChatInterface: React.FC = () => {
       </div>
 
       {messages.length <= 1 && (
-        <div className="px-4 pb-3 flex flex-wrap gap-2">
+        <div className="px-4 pb-2 flex flex-wrap gap-2 shrink-0">
           {suggestedQuestions.map((q) => (
             <button
               key={q}
               type="button"
               onClick={() => handleSuggestedQuestion(q)}
-              className="text-xs font-mono px-3 py-1.5 border border-slate-700 text-slate-400 hover:border-accent hover:text-accent transition-colors duration-300"
+              className="text-[10px] font-medium px-3 py-1.5 rounded-full bg-white/[0.05] text-zinc-400 border border-white/[0.06] hover:border-violet-500/30 hover:text-white transition-colors"
             >
               {q}
             </button>
@@ -111,27 +157,54 @@ export const ChatInterface: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="px-4 py-4 border-t border-slate-800 flex gap-3">
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about skills, experience, or contact info..."
-          disabled={status === ChatStatus.LOADING}
-          className="flex-1 bg-transparent border-b-2 border-slate-700 text-white font-mono text-sm py-2 px-1 focus:outline-none focus:border-accent transition-colors duration-300 placeholder-slate-600 disabled:opacity-50"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || status === ChatStatus.LOADING}
-          className="px-5 py-2 text-sm font-mono uppercase tracking-wider bg-accent text-surface font-semibold hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
-        >
-          Send
-        </button>
-      </form>
+      <div className="px-4 py-4 shrink-0 border-t border-white/[0.04] space-y-3">
+        {showV2Widget && (
+          <div
+            ref={containerRef}
+            className="flex justify-center overflow-hidden rounded-xl bg-white/[0.02]"
+          />
+        )}
+
+        {loadError && (
+          <p className="text-xs text-amber-400/90">{loadError}</p>
+        )}
+
+        {captchaError && (
+          <p className="text-xs text-rose-400">{captchaError}</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about experience, skills, achievements..."
+            disabled={status === ChatStatus.LOADING || (isRequired && !isReady)}
+            className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl text-white text-sm py-2.5 px-4 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 placeholder-zinc-600 disabled:opacity-50 transition-all"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <button
+            type="submit"
+            disabled={
+              !input.trim() ||
+              status === ChatStatus.LOADING ||
+              (isRequired && !isReady)
+            }
+            className="px-5 py-2.5 text-sm font-semibold rounded-2xl bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+          >
+            Send
+          </button>
+        </form>
+
+        {isRequired && config?.version === 'v3' && (
+          <p className="text-[10px] text-zinc-600 text-center">
+            Protected by reCAPTCHA
+          </p>
+        )}
+      </div>
     </section>
   );
 };

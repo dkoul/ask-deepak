@@ -11,10 +11,10 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message })
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}>
       <div
-        className={`max-w-[85%] px-4 py-3 text-sm leading-relaxed ${
+        className={`max-w-[88%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl ${
           isUser
-            ? 'bg-accent text-surface font-medium'
-            : 'bg-surface-elevated border border-slate-800 text-slate-200'
+            ? 'bg-violet-600 text-white font-medium'
+            : 'bg-white/[0.05] border border-white/[0.06] text-zinc-300'
         }`}
       >
         {message.content.split('\n').map((line, i) => (
