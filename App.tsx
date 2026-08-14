@@ -2,6 +2,7 @@ import React from 'react';
 import { Hero } from './components/Hero';
 import { SkillTags } from './components/SkillTags';
 import { ExperienceSection } from './components/ExperienceSection';
+import { AchievementsSection } from './components/AchievementsSection';
 import { ChatInterface } from './components/ChatInterface';
 
 const App: React.FC = () => {
@@ -25,6 +26,7 @@ const App: React.FC = () => {
             <Hero />
             <SkillTags />
             <ExperienceSection />
+            <AchievementsSection />
           </div>
 
           <div className="lg:sticky lg:top-8">

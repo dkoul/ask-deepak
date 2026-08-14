@@ -28,8 +28,8 @@ export const Hero: React.FC = () => {
         <p className="text-accent font-mono text-sm md:text-base tracking-wide">
           {resume.title} · Red Hat
         </p>
-        <p className="text-slate-400 text-sm md:text-base max-w-md mx-auto leading-relaxed">
-          {resume.location} · Engineering Leadership · Quality Advocacy · AI Product Workflows
+        <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto leading-relaxed">
+          {resume.location} · 19+ Years · Engineering Leadership · AI · Test Automation
         </p>
       </div>
 
