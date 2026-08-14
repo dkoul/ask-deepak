@@ -20,7 +20,7 @@ const rateLimiter = new RateLimiter();
 app.set('trust proxy', 1);
 
 const PORT = Number(process.env.PORT || 3000);
-const MAX_QUESTION_LENGTH = Number(process.env.MAX_QUESTION_LENGTH || 400);
+const MAX_QUESTION_LENGTH = Number(process.env.MAX_QUESTION_LENGTH || 2500);
 const MAX_HISTORY_MESSAGES = Number(process.env.MAX_HISTORY_MESSAGES || 6);
 const MAX_ANSWER_LENGTH = Number(process.env.MAX_ANSWER_LENGTH || 600);
 const DEEPSEEK_MAX_TOKENS = Number(process.env.DEEPSEEK_MAX_TOKENS || 300);
@@ -141,14 +141,8 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     res.json({ answer: finalized, source: 'deepseek' });
   } catch (err) {
     console.error('Chat API error:', err);
-    const fallback = findFallbackAnswer(trimmedQuestion);
-    if (fallback) {
-      res.json({ answer: finalizeAnswer(fallback), source: 'fallback' });
-      return;
-    }
-    res.status(503).json({
-      error: 'Assistant is temporarily unavailable. Please try again later.',
-    });
+    const fallback = findFallbackAnswer(trimmedQuestion) ?? getDefaultFallback();
+    res.json({ answer: finalizeAnswer(fallback), source: 'fallback' });
   }
 });
 

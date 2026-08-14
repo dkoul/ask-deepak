@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { resume } from '../data/resume';
+import { ThemeToggle } from './ThemeToggle';
 
 export type ResumeSection = 'overview' | 'experience' | 'skills' | 'achievements' | 'chat';
 
@@ -13,11 +14,11 @@ const ITEMS: {
   { key: 'experience', label: 'Experience', section: 'Profile', icon: 'tasks' },
   { key: 'skills', label: 'Skills', section: 'Profile', icon: 'analytics' },
   { key: 'achievements', label: 'Achievements', section: 'Profile', icon: 'spaces' },
-  { key: 'chat', label: 'Ask Deepak', section: 'Assistant', icon: 'dashboard' },
+  { key: 'chat', label: 'Bubbly', section: 'Assistant', icon: 'chat' },
 ];
 
 function Icon({ kind }: { kind: string }) {
-  const p: Record<string, React.ReactNode> = {
+  const p: Record<string, ReactNode> = {
     activity: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
     tasks: (
       <g>
@@ -31,28 +32,19 @@ function Icon({ kind }: { kind: string }) {
         <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
       </g>
     ),
-    dashboard: (
-      <g>
-        <rect x="3" y="3" width="7" height="7" rx="1.5" />
-        <rect x="14" y="3" width="7" height="7" rx="1.5" />
-        <rect x="3" y="14" width="7" height="7" rx="1.5" />
-        <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      </g>
+    chat: (
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
     ),
-    analytics: (
-      <g>
-        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-      </g>
-    ),
+    analytics: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
   };
   return (
     <svg
-      width="13"
-      height="13"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -87,58 +79,46 @@ export function ResumeSidebar({ active, onSelect }: ResumeSidebarProps) {
   }, [hovered, active]);
 
   return (
-    <aside className="w-full lg:w-60 shrink-0 rounded-card bg-surface p-2 shadow-raised">
-      <a
-        href={resume.links.linkedin}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mb-2 flex w-full items-center gap-2.5 rounded-control p-1.5 text-left transition-[background-color,transform] duration-100 hover:bg-hover active:scale-[0.96]"
-      >
-        <span className="relative flex size-8 shrink-0 overflow-hidden rounded-[8px] bg-ink">
-          {photoError ? (
-            <span className="flex size-full items-center justify-center text-[13px] font-semibold text-surface">
-              DK
+    <aside className="flex w-full shrink-0 flex-col p-3 lg:w-[220px] lg:overflow-y-auto">
+      <div className="mb-3 flex items-center gap-1">
+        <a
+          href={resume.links.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-control px-1.5 py-1.5 transition-colors hover:bg-hover"
+        >
+          <span className="relative flex size-8 shrink-0 overflow-hidden rounded-full bg-ink ring-1 ring-line">
+            {photoError ? (
+              <span className="flex size-full items-center justify-center text-[11px] font-semibold text-surface">
+                DK
+              </span>
+            ) : (
+              <img
+                src="/deepak.jpg"
+                alt={resume.name}
+                className="size-full object-cover object-top"
+                onError={() => setPhotoError(true)}
+              />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium tracking-[-0.01em] text-ink">
+              {resume.name}
             </span>
-          ) : (
-            <img
-              src="/deepak.jpg"
-              alt={resume.name}
-              className="size-full object-cover object-top"
-              onError={() => setPhotoError(true)}
-            />
-          )}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-medium leading-tight text-ink">
-            {resume.name}
+            <span className="block truncate text-[11px] text-ink-3">Engineering leader</span>
           </span>
-          <span className="block truncate text-[11px] leading-tight text-ink-3">
-            {resume.title}
-          </span>
-        </span>
-      </a>
-
-      <button
-        type="button"
-        onClick={() => onSelect('chat')}
-        className="mb-2 flex w-full items-center gap-2 rounded-control px-2 py-1.5 text-[13px] font-medium text-accent transition-[background-color,transform] duration-100 hover:bg-accent-tint active:scale-[0.96]"
-      >
-        <span className="min-w-0 flex-1 truncate text-left">Ask about my work</span>
-        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-accent text-white">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </span>
-      </button>
+        </a>
+        <ThemeToggle className="shrink-0" />
+      </div>
 
       <div
         ref={navRef}
         onMouseLeave={() => setHovered(null)}
-        className="relative flex flex-col gap-2"
+        className="relative flex flex-1 flex-col gap-3"
       >
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 rounded-[7px] bg-hover"
+          className="pointer-events-none absolute inset-x-0 rounded-[8px] bg-hover"
           style={{
             top: box?.top ?? 0,
             height: box?.height ?? 0,
@@ -149,10 +129,10 @@ export function ResumeSidebar({ active, onSelect }: ResumeSidebarProps) {
         />
         {sections.map((section) => (
           <div key={section}>
-            <div className="px-2 pb-1 pt-1 text-[10.5px] font-medium uppercase tracking-[0.08em] text-ink-3">
+            <div className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-3">
               {section}
             </div>
-            <div className="flex flex-col gap-px">
+            <div className="flex flex-col gap-0.5">
               {ITEMS.filter((item) => item.section === section).map((item) => {
                 const isActive = item.key === active;
                 return (
@@ -167,18 +147,21 @@ export function ResumeSidebar({ active, onSelect }: ResumeSidebarProps) {
                     onBlur={() => setHovered(null)}
                     onClick={() => onSelect(item.key)}
                     aria-current={isActive ? 'page' : undefined}
-                    className="group relative z-10 flex w-full items-center gap-2 rounded-[7px] px-2 py-1.5 text-left transition-[color,transform] duration-150 active:scale-[0.96]"
+                    className="relative z-10 flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-1.5 text-left transition-transform duration-150 active:scale-[0.98]"
                   >
                     <span className={isActive ? 'text-ink' : 'text-ink-3'}>
                       <Icon kind={item.icon} />
                     </span>
                     <span
-                      className={`min-w-0 flex-1 truncate text-[13px] transition-colors duration-150 ${
+                      className={`truncate text-[13px] ${
                         isActive ? 'font-medium text-ink' : 'text-ink-2'
                       }`}
                     >
                       {item.label}
                     </span>
+                    {item.key === 'chat' && (
+                      <span className="ml-auto size-1.5 rounded-full bg-accent" aria-hidden />
+                    )}
                   </button>
                 );
               })}
@@ -187,18 +170,26 @@ export function ResumeSidebar({ active, onSelect }: ResumeSidebarProps) {
         ))}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 px-1">
+      <div className="mt-4 flex gap-3 border-t border-line px-2.5 pt-3">
+        <a
+          href={resume.links.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] text-ink-3 transition-colors hover:text-ink"
+        >
+          LinkedIn
+        </a>
         <a
           href={resume.links.github}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] font-medium text-accent-ink hover:underline"
+          className="text-[11px] text-ink-3 transition-colors hover:text-ink"
         >
           GitHub
         </a>
         <a
           href={`mailto:${resume.email}`}
-          className="text-[11px] font-medium text-accent-ink hover:underline"
+          className="text-[11px] text-ink-3 transition-colors hover:text-ink"
         >
           Email
         </a>

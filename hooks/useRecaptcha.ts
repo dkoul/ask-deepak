@@ -88,7 +88,7 @@ export function useRecaptcha() {
 
       widgetIdRef.current = window.grecaptcha.render(node, {
         sitekey: config.siteKey,
-        theme: 'dark',
+        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
         size: 'compact',
       });
       setWidgetReady(true);

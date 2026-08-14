@@ -1,8 +1,13 @@
 import {
   findFallbackAnswer,
   getDefaultFallback,
+  SUGGESTED_INTENTS,
   SUGGESTED_QUESTIONS,
+  type ChatIntent,
 } from '../lib/chatFallback';
+
+export type { ChatIntent };
+export { SUGGESTED_INTENTS, SUGGESTED_QUESTIONS };
 
 let sessionId: string | null = null;
 
@@ -75,4 +80,8 @@ export async function askAboutDeepak(
 
 export function getSuggestedQuestions(): string[] {
   return SUGGESTED_QUESTIONS;
+}
+
+export function getSuggestedIntents(): ChatIntent[] {
+  return SUGGESTED_INTENTS;
 }

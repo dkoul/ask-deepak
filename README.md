@@ -26,7 +26,7 @@ The `/api/chat` endpoint is protected with:
 | Per session per hour | 12 requests |
 | Global daily cap (all visitors) | 150 requests |
 | Minimum interval between messages | 2 seconds |
-| Max question length | 400 characters |
+| Max question length | 2500 characters |
 | Max answer length | 600 characters |
 | Max response tokens | 300 |
 
@@ -46,6 +46,10 @@ RECAPTCHA_VERSION=v2                  # or v3 for invisible captcha
 - **v3** runs invisible captcha on each send (shows “Protected by reCAPTCHA”).
 
 The server verifies every token with Google before processing chat requests. Without `RECAPTCHA_SECRET_KEY`, captcha is disabled (dev mode).
+
+Local `npm run dev` sets `RECAPTCHA_BYPASS=1` so chat works on localhost even if your site key doesn’t list `localhost`. Production (`npm start` / `npm run preview`) still enforces captcha when keys are set.
+
+Add `localhost` (and your real domain) under **Domains** in the [reCAPTCHA admin console](https://www.google.com/recaptcha/admin) before deploying.
 
 Without `DEEPSEEK_API_KEY`, the chat falls back to keyword-matched answers from resume data (no API calls).
 

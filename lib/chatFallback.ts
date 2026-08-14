@@ -1,12 +1,39 @@
 import { resume } from '../data/resume';
 
-export const SUGGESTED_QUESTIONS = [
-  'What does Deepak do at Red Hat?',
-  'Tell me about his AI and MCP work',
-  'What book did he publish?',
-  'Has he spoken at conferences?',
-  'How can I contact him?',
+export type ChatIntent = {
+  id: string;
+  label: string;
+  description: string;
+  emoji: string;
+  prompt: string;
+};
+
+export const SUGGESTED_INTENTS: ChatIntent[] = [
+  {
+    id: 'mentor',
+    label: 'Mentorship',
+    description: 'How to get guidance from Deepak',
+    emoji: '',
+    prompt: 'How can I get mentorship?',
+  },
+  {
+    id: 'hire',
+    label: 'Hiring',
+    description: 'Senior engineering leader — paste JD or URL next',
+    emoji: '',
+    prompt: "I'm looking to hire a senior engineering leader",
+  },
+  {
+    id: 'speak',
+    label: 'Speaking',
+    description: 'Invite Deepak to a meetup or event',
+    emoji: '',
+    prompt: "I'm looking for someone to speak at our meetup",
+  },
 ];
+
+/** @deprecated Prefer SUGGESTED_INTENTS */
+export const SUGGESTED_QUESTIONS = SUGGESTED_INTENTS.map((i) => i.prompt);
 
 function formatExperienceSummary(): string {
   return resume.experience
@@ -19,6 +46,38 @@ function formatExperienceSummary(): string {
 
 export function findFallbackAnswer(question: string): string | null {
   const q = question.toLowerCase();
+
+  if (q.includes('mentor')) {
+    return `Deepak mentors through community work (Pune AI Collective) and engineering leadership conversations. The best next step is to reach him on LinkedIn (${resume.links.linkedin}) or email (${resume.email}) with what you're hoping to learn — he'll take it from there.`;
+  }
+
+  if (
+    q.includes('hire') ||
+    q.includes('hiring') ||
+    q.includes('recruit') ||
+    q.includes('senior engineering leader')
+  ) {
+    const hasJdPayload =
+      /https?:\/\//.test(q) ||
+      q.includes('www.') ||
+      ((q.includes('responsibilities') ||
+        q.includes('requirements') ||
+        q.includes('job description') ||
+        q.includes('role overview')) &&
+        q.length > 200) ||
+      q.length > 500;
+
+    if (!hasJdPayload) {
+      return `Love that — Deepak is a Senior Engineering Manager with 19+ years in software, including 12+ at Red Hat.\n\nPaste the job description here, or drop a URL to the JD, and I'll map how he fits.`;
+    }
+  }
+
+  if (
+    (q.includes('speak') || q.includes('meetup') || q.includes('keynote') || q.includes('workshop')) &&
+    (q.includes('looking') || q.includes('invite') || q.includes('meetup') || q.includes('event') || q.includes('conference'))
+  ) {
+    return `Deepak's been an international speaker for 14+ years — Devconf, FOSSASIA, SeleniumConf, ATAGTR, MCP Dev Summit, and more.\n\nShare the meetup details (topic, date, format) and reach him on LinkedIn (${resume.links.linkedin}) or ${resume.email} to lock it in.`;
+  }
 
   if (q.includes('contact') || q.includes('email') || q.includes('reach')) {
     return `You can connect with Deepak on LinkedIn (${resume.links.linkedin}) or email him at ${resume.email}. He's based in ${resume.location}.`;
@@ -121,5 +180,5 @@ export function findFallbackAnswer(question: string): string | null {
 }
 
 export function getDefaultFallback(): string {
-  return `I'm Deepak's resume assistant. I can help you learn about his 19+ years of experience at Red Hat and PTC, his skills in engineering leadership and test automation, his AI thought leadership, published book, open source work, and how to contact him.\n\nTry asking:\n${SUGGESTED_QUESTIONS.map((q) => `• ${q}`).join('\n')}`;
+  return `Hey, I'm Bubbly 🫧 — I know Deepak inside-out. Ask about mentorship, hiring him as a senior engineering leader, or inviting him to speak — or anything else about his career.\n\nTry asking:\n${SUGGESTED_INTENTS.map((i) => `• ${i.prompt}`).join('\n')}`;
 }

@@ -83,6 +83,15 @@ const ON_TOPIC_SIGNALS = [
   'what did he',
   'what has he',
   'years of experience',
+  'mentor',
+  'mentorship',
+  'meetup',
+  'jd',
+  'job description',
+  'job desc',
+  'invite',
+  'keynote',
+  'workshop',
   'redhat',
 ];
 
@@ -104,9 +113,9 @@ const OFF_TOPIC_PATTERNS = [
 const GREETING_PATTERN = /^(hi|hello|hey|good (morning|afternoon|evening))[!?.\s]*$/i;
 
 export const OFF_TOPIC_REFUSAL =
-  'I can only discuss Deepak Koul\'s professional background, skills, work experience, achievements, community leadership, speaking engagements, and how to contact him. Please ask a question related to his career.';
+  "Whoa, that's outside my bubble 🫧 — I only chat about Deepak Koul's career, skills, experience, achievements, community work, speaking, and how to reach him. Ask me something about him!";
 
-export const GREETING_RESPONSE = `Hello! I'm here to help you learn about ${resume.name} — ${resume.title} at Red Hat. Ask about his experience, skills, achievements, community work, or how to get in touch.`;
+export const GREETING_RESPONSE = `Hey! I'm Bubbly 🫧 — your guide to ${resume.name}, ${resume.title} at Red Hat. Ask about his experience, skills, wins, community work, or how to get in touch.`;
 
 export function isOnTopicQuestion(question: string): boolean {
   const q = question.toLowerCase().trim();

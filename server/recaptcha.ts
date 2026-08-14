@@ -4,7 +4,10 @@ const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 const MIN_V3_SCORE = Number(process.env.RECAPTCHA_MIN_SCORE || 0.5);
 
 export function isRecaptchaEnabled(): boolean {
-  return Boolean(process.env.RECAPTCHA_SECRET_KEY);
+  if (process.env.RECAPTCHA_BYPASS === '1' || process.env.RECAPTCHA_BYPASS === 'true') {
+    return false;
+  }
+  return Boolean(process.env.RECAPTCHA_SECRET_KEY && process.env.RECAPTCHA_SITE_KEY);
 }
 
 export function getRecaptchaConfig(): RecaptchaConfig {

@@ -142,6 +142,22 @@ body {
 @keyframes shimmer-text{0%{background-position:150%}to{background-position:-50%}}
 @keyframes fade-up{0%{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fade-in{0%{opacity:0}to{opacity:1}}
+
+.animate-fade-in {
+  animation: fade-in 280ms var(--ease-out-strong) both;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 @keyframes eq-bounce{0%,to{transform:scaleY(.35)}50%{transform:scaleY(1)}}
 @keyframes stream-in{0%{opacity:0;filter:blur(4px)}to{opacity:1;filter:blur()}}
 @keyframes caret-blink{0%,to{opacity:1}50%{opacity:0}}

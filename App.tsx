@@ -8,11 +8,12 @@ import { ResumeAchievements } from './components/ResumeAchievements';
 
 const App: React.FC = () => {
   const [section, setSection] = useState<ResumeSection>('overview');
+  const chatFocused = section === 'chat';
 
   const mainContent = () => {
     switch (section) {
       case 'overview':
-        return <ResumeOverview />;
+        return <ResumeOverview onAskBubbly={() => setSection('chat')} />;
       case 'experience':
         return <ResumeExperience />;
       case 'skills':
@@ -22,43 +23,39 @@ const App: React.FC = () => {
       case 'chat':
         return null;
       default:
-        return <ResumeOverview />;
+        return <ResumeOverview onAskBubbly={() => setSection('chat')} />;
     }
   };
 
   return (
     <div className="min-h-[100dvh] bg-page text-ink font-sans antialiased">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 p-4 lg:flex-row lg:p-6 lg:gap-5">
-        <ResumeSidebar active={section} onSelect={setSection} />
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-3 p-3 sm:p-4 lg:h-[100dvh] lg:flex-row lg:gap-0 lg:overflow-hidden lg:p-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] bg-surface shadow-raised lg:flex-row">
+          <ResumeSidebar active={section} onSelect={setSection} />
 
-        <div className="flex flex-1 min-w-0 gap-4 lg:gap-5">
-          {section !== 'chat' && (
-            <main className="flex-1 min-w-0 max-w-2xl">{mainContent()}</main>
-          )}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
+            {!chatFocused && (
+              <main className="min-w-0 flex-1 overflow-y-auto border-t border-line p-4 sm:p-5 lg:border-t-0 lg:border-l lg:border-line">
+                {mainContent()}
+              </main>
+            )}
 
-          <aside
-            className={`shrink-0 ${
-              section === 'chat'
-                ? 'w-full lg:max-w-xl lg:mx-auto'
-                : 'hidden lg:block w-[min(100%,400px)]'
-            }`}
-          >
-            <ResumeChat className={section === 'chat' ? 'min-h-[70vh]' : 'h-[min(70vh,640px)]'} />
-          </aside>
+            <aside
+              className={`flex min-h-0 shrink-0 flex-col border-t border-line lg:border-t-0 lg:border-l lg:border-line ${
+                chatFocused
+                  ? 'h-[min(84dvh,760px)] w-full lg:h-auto lg:flex-1'
+                  : 'h-[min(62dvh,520px)] w-full lg:h-auto lg:w-[380px]'
+              }`}
+            >
+              <ResumeChat
+                className="h-full min-h-0"
+                focused={chatFocused}
+                onBack={() => setSection('overview')}
+              />
+            </aside>
+          </div>
         </div>
       </div>
-
-      <footer className="py-6 text-center text-[11px] text-ink-3">
-        Deepak Koul · UI from{' '}
-        <a
-          href="https://www.beautifului.dev/"
-          className="text-accent-ink hover:underline"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Beautiful UI
-        </a>
-      </footer>
     </div>
   );
 };

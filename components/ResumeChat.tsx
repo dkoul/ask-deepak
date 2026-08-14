@@ -1,13 +1,18 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { ChatMessage, ChatStatus } from '../types';
-import { askAboutDeepak, ChatApiError, getSuggestedQuestions } from '../services/chatService';
+import {
+  askAboutDeepak,
+  ChatApiError,
+  getSuggestedIntents,
+  type ChatIntent,
+} from '../services/chatService';
 import { useRecaptcha } from '../hooks/useRecaptcha';
 
 const WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    "Hi! I'm Deepak's resume assistant. Ask about his experience at Red Hat, skills, achievements, or how to get in touch.",
+    "I'm Bubbly — Deepak's assistant for career questions, hiring fit, mentorship, and speaking invites.",
   timestamp: Date.now(),
 };
 
@@ -20,26 +25,39 @@ function createMessage(role: 'user' | 'assistant', content: string): ChatMessage
   };
 }
 
-export function ResumeChat({ className = '' }: { className?: string }) {
+export function ResumeChat({
+  className = '',
+  focused = false,
+  onBack,
+}: {
+  className?: string;
+  focused?: boolean;
+  onBack?: () => void;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [draft, setDraft] = useState('');
   const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
   const [captchaError, setCaptchaError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const suggested = getSuggestedQuestions();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const intents = getSuggestedIntents();
   const { config, isReady, loadError, containerRef, getToken, reset, isRequired } =
     useRecaptcha();
+
+  const isEmpty = messages.length <= 1;
+  const busy = status === ChatStatus.LOADING || (isRequired && !isReady);
+  const canSend = draft.trim().length > 0 && status !== ChatStatus.LOADING;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, status]);
 
-  const canSend = draft.trim().length > 0 && status !== ChatStatus.LOADING;
+  useEffect(() => {
+    if (focused) inputRef.current?.focus();
+  }, [focused]);
 
-  const send = async (e?: FormEvent) => {
-    e?.preventDefault();
-    const question = draft.trim();
+  const sendText = async (raw: string) => {
+    const question = raw.trim();
     if (!question || status === ChatStatus.LOADING) return;
 
     if (isRequired && !isReady) {
@@ -65,6 +83,7 @@ export function ResumeChat({ className = '' }: { className?: string }) {
     setMessages((prev) => [...prev, createMessage('user', question)]);
     setDraft('');
     setStatus(ChatStatus.LOADING);
+    if (inputRef.current) inputRef.current.style.height = 'auto';
 
     const history = messages
       .filter((m) => m.id !== 'welcome')
@@ -88,109 +107,185 @@ export function ResumeChat({ className = '' }: { className?: string }) {
     }
   };
 
+  const send = async (e?: FormEvent) => {
+    e?.preventDefault();
+    await sendText(draft);
+  };
+
+  const sendIntent = (intent: ChatIntent) => {
+    void sendText(intent.prompt);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      void send();
+    }
+  };
+
+  const resizeComposer = () => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  };
+
+  const clearChat = () => {
+    setMessages([{ ...WELCOME, timestamp: Date.now() }]);
+    setDraft('');
+    setCaptchaError(null);
+    setStatus(ChatStatus.IDLE);
+    inputRef.current?.focus();
+  };
+
   const showV2 = isRequired && config?.version === 'v2';
 
   return (
-    <div
-      className={`flex h-full min-h-[420px] flex-col overflow-hidden rounded-[14px] bg-surface shadow-card ${className}`}
-    >
-      <div className="flex shrink-0 items-center justify-between border-b border-line p-1.5">
-        <div className="flex items-center gap-2 px-1">
-          <span className="flex size-2 rounded-full bg-accent animate-pulse" />
-          <span className="text-[13px] font-medium text-ink">Ask About Deepak</span>
+    <div className={`flex flex-col bg-surface ${className}`}>
+      <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          {focused && onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="mr-0.5 flex size-7 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-hover hover:text-ink lg:hidden"
+              aria-label="Back to profile"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          )}
+          <span className="relative flex size-2">
+            <span
+              className={`absolute inset-0 rounded-full ${
+                status === ChatStatus.LOADING ? 'animate-ping bg-accent/40' : ''
+              }`}
+            />
+            <span
+              className={`relative size-2 rounded-full ${
+                status === ChatStatus.LOADING ? 'bg-accent' : 'bg-green'
+              }`}
+            />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium tracking-[-0.01em] text-ink">Bubbly</p>
+            <p className="text-[11px] text-ink-3">
+              {status === ChatStatus.LOADING ? 'Thinking' : 'Online'}
+            </p>
+          </div>
         </div>
-        <span className="text-[11px] text-ink-3">AI assistant</span>
+        <button
+          type="button"
+          onClick={clearChat}
+          className="text-[11px] text-ink-3 transition-colors hover:text-ink"
+        >
+          Reset
+        </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-3 pt-2.5 pb-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2">
         {messages.map((msg) =>
           msg.role === 'user' ? (
-            <div key={msg.id} className="flex justify-end pl-10">
-              <div className="rounded-xl bg-field px-3 py-1.5 text-[13px] leading-[1.4] text-ink">
+            <div key={msg.id} className="flex justify-end animate-fade-in">
+              <div className="max-w-[88%] rounded-[14px] rounded-br-[6px] bg-field px-3.5 py-2 text-[13px] leading-[1.5] tracking-[-0.01em] text-ink whitespace-pre-wrap">
                 {msg.content}
               </div>
             </div>
           ) : (
-            <div key={msg.id} className="flex w-full flex-col gap-1.5 animate-fade-in">
-              <div className="flex items-center gap-1 text-[12px] leading-[1.3]">
-                <span className="font-medium text-ink">Resume assistant</span>
-              </div>
-              <p className="text-[13px] leading-normal text-ink whitespace-pre-wrap">
+            <div key={msg.id} className="animate-fade-in">
+              <p className="max-w-[95%] text-[13px] leading-[1.55] tracking-[-0.01em] text-ink-2 whitespace-pre-wrap">
                 {msg.content}
               </p>
             </div>
           )
         )}
+
         {status === ChatStatus.LOADING && (
-          <div className="flex items-center gap-1 text-[12px] text-ink-3">
-            <span className="animate-bounce">·</span>
-            <span className="animate-bounce" style={{ animationDelay: '150ms' }}>·</span>
-            <span className="animate-bounce" style={{ animationDelay: '300ms' }}>·</span>
-            <span className="ml-1">Thinking</span>
+          <div className="flex items-center gap-1.5 py-1 text-ink-3 animate-fade-in">
+            <span className="size-1 rounded-full bg-ink-3 animate-bounce" />
+            <span
+              className="size-1 rounded-full bg-ink-3 animate-bounce"
+              style={{ animationDelay: '120ms' }}
+            />
+            <span
+              className="size-1 rounded-full bg-ink-3 animate-bounce"
+              style={{ animationDelay: '240ms' }}
+            />
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {messages.length <= 1 && (
-        <div className="flex flex-wrap gap-1.5 px-3 pb-2">
-          {suggested.map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => {
-                setDraft(q);
-                inputRef.current?.focus();
-              }}
-              className="rounded-full border border-line bg-inset px-2.5 py-1 text-[11px] text-ink-2 transition-colors hover:bg-hover hover:text-ink"
-            >
-              {q}
-            </button>
-          ))}
+      {isEmpty && (
+        <div className="shrink-0 px-3 pb-2">
+          <div className="flex flex-col gap-0.5">
+            {intents.map((intent) => (
+              <button
+                key={intent.id}
+                type="button"
+                disabled={busy}
+                onClick={() => sendIntent(intent)}
+                className="group flex items-center justify-between gap-3 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-hover disabled:opacity-50"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-medium tracking-[-0.01em] text-ink">
+                    {intent.label}
+                  </span>
+                  <span className="block text-[11.5px] text-ink-3">{intent.description}</span>
+                </span>
+                <span className="text-ink-3 opacity-0 transition-opacity group-hover:opacity-100">
+                  →
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="mt-auto shrink-0 p-1.5 space-y-2">
+      <div className="mt-auto shrink-0 space-y-1.5 p-3 pt-1">
         {showV2 && (
-          <div ref={containerRef} className="flex justify-center overflow-hidden rounded-control bg-inset py-1" />
+          <div
+            ref={containerRef}
+            className="flex justify-center overflow-hidden rounded-control bg-inset py-1"
+          />
         )}
-        {loadError && <p className="text-[11px] text-orange px-1">{loadError}</p>}
-        {captchaError && <p className="text-[11px] text-red px-1">{captchaError}</p>}
+        {loadError && <p className="px-1 text-[11px] text-orange">{loadError}</p>}
+        {captchaError && <p className="px-1 text-[11px] text-red">{captchaError}</p>}
 
-        <div
-          role="presentation"
+        <form
+          onSubmit={send}
           onClick={() => inputRef.current?.focus()}
-          className="flex cursor-text flex-col gap-2 rounded-control border border-line bg-field p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.035)] transition-[border-color,box-shadow] duration-150 focus-within:border-line-strong"
+          className="flex items-end gap-2 rounded-[10px] bg-field px-3 py-2 transition-[box-shadow] focus-within:shadow-[inset_0_0_0_1px_var(--line-strong)]"
         >
-          <input
+          <textarea
             ref={inputRef}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) send();
+            rows={1}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              resizeComposer();
             }}
-            placeholder="Ask about experience, skills, achievements…"
-            disabled={status === ChatStatus.LOADING || (isRequired && !isReady)}
-            className="min-h-4.5 bg-transparent text-[13px] leading-[1.4] text-ink outline-none placeholder:text-ink-3"
+            onKeyDown={onKeyDown}
+            placeholder="Ask about Deepak…"
+            disabled={busy}
+            className="max-h-[120px] min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[13px] leading-[1.45] text-ink outline-none placeholder:text-ink-3 disabled:opacity-50"
           />
-          <div className="flex items-center justify-end">
-            <button
-              type="button"
-              aria-label="Send"
-              disabled={!canSend || (isRequired && !isReady)}
-              onClick={() => send()}
-              className="flex size-7 items-center justify-center rounded-[8px] transition-[background-color,color,transform] duration-200 enabled:active:scale-[0.96]"
-              style={{
-                background: canSend ? 'var(--ink)' : 'var(--line-strong)',
-                color: canSend ? 'var(--surface)' : 'var(--ink-2)',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 19V5M5 12l7-7 7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
+          <button
+            type="submit"
+            aria-label="Send"
+            disabled={!canSend || (isRequired && !isReady)}
+            className="mb-0.5 flex size-7 shrink-0 items-center justify-center rounded-full transition-[background-color,color,transform,opacity] duration-150 enabled:active:scale-[0.96] disabled:opacity-35"
+            style={{
+              background: canSend ? 'var(--ink)' : 'transparent',
+              color: canSend ? 'var(--surface)' : 'var(--ink-3)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </button>
+        </form>
       </div>
     </div>
   );
