@@ -116,7 +116,7 @@ export const ChatInterface: React.FC = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about skills, experience, or contact info..."
+          placeholder="Ask about Deepak's experience, skills, or achievements..."
           disabled={status === ChatStatus.LOADING}
           className="flex-1 bg-transparent border-b-2 border-slate-700 text-white font-mono text-sm py-2 px-1 focus:outline-none focus:border-accent transition-colors duration-300 placeholder-slate-600 disabled:opacity-50"
           autoComplete="off"

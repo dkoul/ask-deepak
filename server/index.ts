@@ -5,6 +5,12 @@ import { fileURLToPath } from 'url';
 import { callDeepSeek, ChatMessage } from './deepseek';
 import { RateLimiter, DEFAULT_LIMITS } from './rateLimiter';
 import { findFallbackAnswer, getDefaultFallback } from '../lib/chatFallback';
+import {
+  getTopicRefusalOrGreeting,
+  isOnTopicQuestion,
+  truncateAnswer,
+  OFF_TOPIC_REFUSAL,
+} from '../lib/topicGuard';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -15,6 +21,8 @@ app.set('trust proxy', 1);
 const PORT = Number(process.env.PORT || 3000);
 const MAX_QUESTION_LENGTH = Number(process.env.MAX_QUESTION_LENGTH || 400);
 const MAX_HISTORY_MESSAGES = Number(process.env.MAX_HISTORY_MESSAGES || 6);
+const MAX_ANSWER_LENGTH = Number(process.env.MAX_ANSWER_LENGTH || 600);
+const DEEPSEEK_MAX_TOKENS = Number(process.env.DEEPSEEK_MAX_TOKENS || 300);
 
 // Prune rate-limit store every 10 minutes
 setInterval(() => rateLimiter.prune(), 10 * 60 * 1000);
@@ -47,6 +55,10 @@ function sanitizeMessages(history: unknown): ChatMessage[] {
         m.content.length <= MAX_QUESTION_LENGTH
     )
     .slice(-MAX_HISTORY_MESSAGES);
+}
+
+function finalizeAnswer(raw: string): string {
+  return truncateAnswer(raw, MAX_ANSWER_LENGTH);
 }
 
 app.post('/api/chat', async (req: Request, res: Response) => {
@@ -86,6 +98,12 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     return;
   }
 
+  const topicResponse = getTopicRefusalOrGreeting(trimmedQuestion);
+  if (topicResponse) {
+    res.json({ answer: finalizeAnswer(topicResponse), source: 'topic_guard' });
+    return;
+  }
+
   const sanitizedHistory = sanitizeMessages(history);
   const messages: ChatMessage[] = [
     ...sanitizedHistory,
@@ -95,17 +113,24 @@ app.post('/api/chat', async (req: Request, res: Response) => {
   try {
     if (!process.env.DEEPSEEK_API_KEY) {
       const fallback = findFallbackAnswer(trimmedQuestion) ?? getDefaultFallback();
-      res.json({ answer: fallback, source: 'fallback' });
+      res.json({ answer: finalizeAnswer(fallback), source: 'fallback' });
       return;
     }
 
-    const answer = await callDeepSeek(messages);
-    res.json({ answer, source: 'deepseek' });
+    const answer = await callDeepSeek(messages, { maxTokens: DEEPSEEK_MAX_TOKENS });
+    const finalized = finalizeAnswer(answer);
+
+    if (!isOnTopicQuestion(finalized) && !finalized.toLowerCase().includes('deepak')) {
+      res.json({ answer: finalizeAnswer(OFF_TOPIC_REFUSAL), source: 'topic_guard' });
+      return;
+    }
+
+    res.json({ answer: finalized, source: 'deepseek' });
   } catch (err) {
     console.error('Chat API error:', err);
     const fallback = findFallbackAnswer(trimmedQuestion);
     if (fallback) {
-      res.json({ answer: fallback, source: 'fallback' });
+      res.json({ answer: finalizeAnswer(fallback), source: 'fallback' });
       return;
     }
     res.status(503).json({
@@ -118,7 +143,14 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     aiConfigured: Boolean(process.env.DEEPSEEK_API_KEY),
-    limits: DEFAULT_LIMITS,
+    limits: {
+      rate: DEFAULT_LIMITS,
+      maxQuestionLength: MAX_QUESTION_LENGTH,
+      maxAnswerLength: MAX_ANSWER_LENGTH,
+      maxTokens: DEEPSEEK_MAX_TOKENS,
+      maxHistoryMessages: MAX_HISTORY_MESSAGES,
+    },
+    topicGuard: 'strict — Deepak Koul profile only',
   });
 });
 

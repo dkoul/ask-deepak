@@ -27,9 +27,10 @@ The `/api/chat` endpoint is protected with:
 | Global daily cap (all visitors) | 150 requests |
 | Minimum interval between messages | 2 seconds |
 | Max question length | 400 characters |
-| Max response tokens | 400 |
+| Max answer length | 600 characters |
+| Max response tokens | 300 |
 
-Tune limits via env vars or edit `server/rateLimiter.ts`. If someone hits a limit, they get a friendly message instead of burning your tokens.
+Tune limits via env vars or edit `server/rateLimiter.ts`. Off-topic questions are blocked before any API call (no tokens spent). Answers are strictly limited to Deepak Koul's professional profile.
 
 Without `DEEPSEEK_API_KEY`, the chat falls back to keyword-matched answers from resume data (no API calls).
 
