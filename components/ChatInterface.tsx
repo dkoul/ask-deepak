@@ -7,7 +7,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    "Hi! I'm Deepak's resume assistant. Ask me anything about his experience, skills, community work, or how to get in touch.",
+    "Hi! Ask me anything about Deepak's experience, skills, achievements, or how to get in touch.",
   timestamp: Date.now(),
 };
 
@@ -20,7 +20,11 @@ function createMessage(role: 'user' | 'assistant', content: string): ChatMessage
   };
 }
 
-export const ChatInterface: React.FC = () => {
+interface ChatInterfaceProps {
+  embedded?: boolean;
+}
+
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ embedded = false }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
@@ -54,7 +58,7 @@ export const ChatInterface: React.FC = () => {
       const message =
         err instanceof ChatApiError
           ? err.message
-          : "Sorry, I couldn't process that request. Please try again or reach out to Deepak directly via LinkedIn.";
+          : "Sorry, I couldn't process that. Try again or reach out via LinkedIn.";
 
       setMessages((prev) => [...prev, createMessage('assistant', message)]);
       setStatus(ChatStatus.ERROR);
@@ -67,23 +71,31 @@ export const ChatInterface: React.FC = () => {
     inputRef.current?.focus();
   };
 
+  const wrapperClass = embedded
+    ? 'flex flex-col h-full min-h-[460px]'
+    : 'flex flex-col h-full min-h-[420px] md:min-h-[480px] bg-bento-card border border-white/[0.06] rounded-[28px]';
+
   return (
-    <section className="flex flex-col h-full min-h-[420px] md:min-h-[480px] bg-surface-elevated border border-slate-800">
-      <header className="px-5 py-4 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-        <div>
-          <h2 className="text-white font-display text-lg">Ask About Deepak</h2>
-          <p className="text-slate-500 text-xs font-mono">AI-powered resume assistant</p>
+    <section className={wrapperClass}>
+      <header className="px-5 py-4 flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20">
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-violet-300">
+            AI Assistant
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-white font-bold text-base truncate">Ask About Deepak</h2>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 chat-scroll">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 chat-scroll min-h-0">
         {messages.map((message) => (
           <ChatMessageBubble key={message.id} message={message} />
         ))}
         {status === ChatStatus.LOADING && (
           <div className="flex justify-start animate-fade-in">
-            <div className="px-4 py-3 bg-surface-elevated border border-slate-800 text-slate-400 text-sm font-mono">
+            <div className="px-4 py-2.5 rounded-2xl bg-white/[0.05] text-zinc-500 text-sm">
               <span className="inline-flex gap-1">
                 <span className="animate-bounce" style={{ animationDelay: '0ms' }}>·</span>
                 <span className="animate-bounce" style={{ animationDelay: '150ms' }}>·</span>
@@ -96,13 +108,13 @@ export const ChatInterface: React.FC = () => {
       </div>
 
       {messages.length <= 1 && (
-        <div className="px-4 pb-3 flex flex-wrap gap-2">
+        <div className="px-4 pb-2 flex flex-wrap gap-2 shrink-0">
           {suggestedQuestions.map((q) => (
             <button
               key={q}
               type="button"
               onClick={() => handleSuggestedQuestion(q)}
-              className="text-xs font-mono px-3 py-1.5 border border-slate-700 text-slate-400 hover:border-accent hover:text-accent transition-colors duration-300"
+              className="text-[10px] font-medium px-3 py-1.5 rounded-full bg-white/[0.05] text-zinc-400 border border-white/[0.06] hover:border-violet-500/30 hover:text-white transition-colors"
             >
               {q}
             </button>
@@ -110,15 +122,18 @@ export const ChatInterface: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="px-4 py-4 border-t border-slate-800 flex gap-3">
+      <form
+        onSubmit={handleSubmit}
+        className="px-4 py-4 flex gap-2 shrink-0 border-t border-white/[0.04]"
+      >
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about Deepak's experience, skills, or achievements..."
+          placeholder="Ask about experience, skills, achievements..."
           disabled={status === ChatStatus.LOADING}
-          className="flex-1 bg-transparent border-b-2 border-slate-700 text-white font-mono text-sm py-2 px-1 focus:outline-none focus:border-accent transition-colors duration-300 placeholder-slate-600 disabled:opacity-50"
+          className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-2xl text-white text-sm py-2.5 px-4 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 placeholder-zinc-600 disabled:opacity-50 transition-all"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -126,7 +141,7 @@ export const ChatInterface: React.FC = () => {
         <button
           type="submit"
           disabled={!input.trim() || status === ChatStatus.LOADING}
-          className="px-5 py-2 text-sm font-mono uppercase tracking-wider bg-accent text-surface font-semibold hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-300"
+          className="px-5 py-2.5 text-sm font-semibold rounded-2xl bg-violet-600 text-white hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
         >
           Send
         </button>
