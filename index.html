@@ -3,77 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#050505" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Deepak Answers">
-    <title>Deepak Answers</title>
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Deepak Koul — Senior Engineering Manager at Red Hat. Explore skills, experience, and chat with an AI assistant to learn more." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Deepak Koul" />
+    <title>Deepak Koul — Senior Engineering Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
+              sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
               mono: ['"Space Mono"', 'monospace'],
-              mystic: ['"Cinzel"', 'serif'],
+              display: ['"DM Sans"', 'system-ui', 'sans-serif'],
             },
             colors: {
-              'deepak-black': '#050505',
-              'deepak-accent': '#00ff9d',
-              'deepak-glow': 'rgba(0, 255, 157, 0.3)',
-              'deepak-error': '#ff0055',
+              surface: '#0f172a',
+              'surface-elevated': '#1e293b',
+              accent: '#38bdf8',
             },
             animation: {
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'glitch': 'glitch 1s linear infinite',
-              'fade-in': 'fadeIn 1s ease-out forwards',
+              'fade-in': 'fadeIn 0.4s ease-out forwards',
             },
             keyframes: {
               fadeIn: {
-                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '0%': { opacity: '0', transform: 'translateY(6px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
-              }
-            }
+              },
+            },
           },
         },
-      }
+      };
     </script>
-    <style>
-      body {
-        background-color: #050505;
-        color: #e0e0e0;
-        /* Prevent bounce scroll on mobile */
-        overscroll-behavior-y: none; 
-      }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #111;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #333;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #00ff9d;
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
+    <link rel="stylesheet" href="/index.css" />
+  </head>
   <body>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

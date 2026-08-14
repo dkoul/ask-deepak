@@ -1,18 +1,12 @@
-export interface PrankState {
-  petition: string;
-  question: string;
-  secretAnswer: string;
-  isRecordingSecret: boolean;
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
 }
 
-export interface AnswerResult {
-  text: string;
-  isRevealed: boolean;
-  type: 'secret' | 'ai' | 'fallback';
-}
-
-export enum GameState {
+export enum ChatStatus {
   IDLE = 'IDLE',
-  ASKING = 'ASKING',
-  ANSWERING = 'ANSWERING',
+  LOADING = 'LOADING',
+  ERROR = 'ERROR',
 }
