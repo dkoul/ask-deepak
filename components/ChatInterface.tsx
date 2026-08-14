@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, FormEvent } from 'react';
 import { ChatMessage, ChatStatus } from '../types';
-import { askAboutDeepak, getSuggestedQuestions } from '../services/chatService';
+import { askAboutDeepak, ChatApiError, getSuggestedQuestions } from '../services/chatService';
 import { ChatMessageBubble } from './ChatMessageBubble';
 
 const WELCOME_MESSAGE: ChatMessage = {
@@ -50,14 +50,13 @@ export const ChatInterface: React.FC = () => {
       const answer = await askAboutDeepak(question, history);
       setMessages((prev) => [...prev, createMessage('assistant', answer)]);
       setStatus(ChatStatus.IDLE);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        createMessage(
-          'assistant',
-          "Sorry, I couldn't process that request. Please try again or reach out to Deepak directly via LinkedIn."
-        ),
-      ]);
+    } catch (err) {
+      const message =
+        err instanceof ChatApiError
+          ? err.message
+          : "Sorry, I couldn't process that request. Please try again or reach out to Deepak directly via LinkedIn.";
+
+      setMessages((prev) => [...prev, createMessage('assistant', message)]);
       setStatus(ChatStatus.ERROR);
       setTimeout(() => setStatus(ChatStatus.IDLE), 2000);
     }
