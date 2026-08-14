@@ -29,7 +29,8 @@ export class ChatApiError extends Error {
 
 export async function askAboutDeepak(
   question: string,
-  history: { role: 'user' | 'assistant'; content: string }[] = []
+  history: { role: 'user' | 'assistant'; content: string }[] = [],
+  captchaToken?: string | null
 ): Promise<string> {
   try {
     const response = await fetch('/api/chat', {
@@ -39,6 +40,7 @@ export async function askAboutDeepak(
         question,
         history: history.slice(-6),
         sessionId: getSessionId(),
+        captchaToken: captchaToken ?? undefined,
       }),
     });
 

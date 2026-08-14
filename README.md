@@ -32,6 +32,21 @@ The `/api/chat` endpoint is protected with:
 
 Tune limits via env vars or edit `server/rateLimiter.ts`. Off-topic questions are blocked before any API call (no tokens spent). Answers are strictly limited to Deepak Koul's professional profile.
 
+## reCAPTCHA
+
+Add your keys to `.env`:
+
+```bash
+RECAPTCHA_SITE_KEY=your_site_key      # client-side (public)
+RECAPTCHA_SECRET_KEY=your_secret_key  # server-side only
+RECAPTCHA_VERSION=v2                  # or v3 for invisible captcha
+```
+
+- **v2** shows a checkbox above the chat input (dark theme).
+- **v3** runs invisible captcha on each send (shows “Protected by reCAPTCHA”).
+
+The server verifies every token with Google before processing chat requests. Without `RECAPTCHA_SECRET_KEY`, captcha is disabled (dev mode).
+
 Without `DEEPSEEK_API_KEY`, the chat falls back to keyword-matched answers from resume data (no API calls).
 
 Edit `data/resume.ts` to update your profile information.

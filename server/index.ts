@@ -11,6 +11,7 @@ import {
   truncateAnswer,
   OFF_TOPIC_REFUSAL,
 } from '../lib/topicGuard';
+import { getRecaptchaConfig, isRecaptchaEnabled, verifyRecaptchaToken } from './recaptcha';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -63,7 +64,7 @@ function finalizeAnswer(raw: string): string {
 
 app.post('/api/chat', async (req: Request, res: Response) => {
   const ip = getClientIp(req);
-  const { question, history, sessionId } = req.body ?? {};
+  const { question, history, sessionId, captchaToken } = req.body ?? {};
 
   if (!isValidSessionId(sessionId)) {
     res.status(400).json({ error: 'Invalid session' });
@@ -82,6 +83,18 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       error: `Question too long (max ${MAX_QUESTION_LENGTH} characters)`,
     });
     return;
+  }
+
+  if (isRecaptchaEnabled()) {
+    const captchaValid = await verifyRecaptchaToken(
+      typeof captchaToken === 'string' ? captchaToken : ''
+    );
+    if (!captchaValid) {
+      res.status(403).json({
+        error: 'Captcha verification failed. Please complete the captcha and try again.',
+      });
+      return;
+    }
   }
 
   const limitResult = rateLimiter.check(ip, sessionId);
@@ -139,10 +152,17 @@ app.post('/api/chat', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/config', (_req, res) => {
+  res.json({
+    recaptcha: getRecaptchaConfig(),
+  });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     aiConfigured: Boolean(process.env.DEEPSEEK_API_KEY),
+    recaptchaEnabled: isRecaptchaEnabled(),
     limits: {
       rate: DEFAULT_LIMITS,
       maxQuestionLength: MAX_QUESTION_LENGTH,
@@ -174,5 +194,8 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(
     `DeepSeek API: ${process.env.DEEPSEEK_API_KEY ? 'configured' : 'NOT configured (set DEEPSEEK_API_KEY)'}`
+  );
+  console.log(
+    `reCAPTCHA: ${isRecaptchaEnabled() ? 'enabled' : 'NOT configured (set RECAPTCHA_SITE_KEY + RECAPTCHA_SECRET_KEY)'}`
   );
 });
