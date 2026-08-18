@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { GET as getConfig } from '../api/config';
-import { GET as getHealth } from '../api/health';
-import { POST as postChat } from '../api/chat';
+import { GET as getConfig } from '../api/config.js';
+import { GET as getHealth } from '../api/health.js';
+import { POST as postChat } from '../api/chat.js';
 
 test('Vercel GET /api/health handler returns ok', async () => {
   const response = getHealth();

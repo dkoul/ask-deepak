@@ -13,7 +13,7 @@
 4. Production (self-hosted):
    `npm run preview` — builds frontend and serves everything on port 3000
 
-Vercel production (`https://ask-deepak.vercel.app`) serves the Vite frontend from `dist/` and Web Handler functions at `/api/chat`, `/api/config`, and `/api/health`. Set these **Vercel environment variables** (Production):
+Vercel production (`https://ask-deepak.vercel.app`) serves the Vite frontend from `dist/` and JavaScript serverless functions at `/api/chat`, `/api/config`, and `/api/health`. Set these **Vercel environment variables** (Production):
 
 - `DEEPSEEK_API_KEY`
 - `RECAPTCHA_SITE_KEY`
