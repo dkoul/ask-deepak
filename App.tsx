@@ -1,61 +1,40 @@
 import React, { useState } from 'react';
-import { ResumeSidebar, type ResumeSection } from './components/ResumeSidebar';
+import { AchievementsPage } from './components/AchievementsPage';
+import { BottomTabs } from './components/BottomTabs';
+import { ExperiencePage } from './components/ExperiencePage';
+import { Footer } from './components/Footer';
+import { HomePage } from './components/HomePage';
+import { Nav } from './components/Nav';
 import { ResumeChat } from './components/ResumeChat';
-import { ResumeOverview } from './components/ResumeOverview';
-import { ResumeExperience } from './components/ResumeExperience';
-import { ResumeSkills } from './components/ResumeSkills';
-import { ResumeAchievements } from './components/ResumeAchievements';
+import { SkillsPage } from './components/SkillsPage';
+import { SupportBanner } from './components/SupportBanner';
+import { useTheme } from './hooks/useTheme';
+import type { Section } from './lib/sections';
 
 const App: React.FC = () => {
-  const [section, setSection] = useState<ResumeSection>('overview');
-  const chatFocused = section === 'chat';
+  const [section, setSection] = useState<Section>('home');
+  const { theme, toggleTheme } = useTheme();
 
-  const mainContent = () => {
-    switch (section) {
-      case 'overview':
-        return <ResumeOverview onAskBubbly={() => setSection('chat')} />;
-      case 'experience':
-        return <ResumeExperience />;
-      case 'skills':
-        return <ResumeSkills />;
-      case 'achievements':
-        return <ResumeAchievements />;
-      case 'chat':
-        return null;
-      default:
-        return <ResumeOverview onAskBubbly={() => setSection('chat')} />;
-    }
+  const go = (next: Section) => {
+    setSection(next);
+    window.scrollTo(0, 0);
   };
 
   return (
-    <div className="min-h-[100dvh] bg-page text-ink font-sans antialiased">
-      <div className="mx-auto flex max-w-[1180px] flex-col gap-3 p-3 sm:p-4 lg:h-[100dvh] lg:flex-row lg:gap-0 lg:overflow-hidden lg:p-5">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] bg-surface shadow-raised lg:flex-row">
-          <ResumeSidebar active={section} onSelect={setSection} />
-
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
-            {!chatFocused && (
-              <main className="min-w-0 flex-1 overflow-y-auto border-t border-line p-4 sm:p-5 lg:border-t-0 lg:border-l lg:border-line">
-                {mainContent()}
-              </main>
-            )}
-
-            <aside
-              className={`flex min-h-0 shrink-0 flex-col border-t border-line lg:border-t-0 lg:border-l lg:border-line ${
-                chatFocused
-                  ? 'h-[min(84dvh,760px)] w-full lg:h-auto lg:flex-1'
-                  : 'h-[min(62dvh,520px)] w-full lg:h-auto lg:w-[380px]'
-              }`}
-            >
-              <ResumeChat
-                className="h-full min-h-0"
-                focused={chatFocused}
-                onBack={() => setSection('overview')}
-              />
-            </aside>
-          </div>
+    <div className="page-wrap">
+      <Nav active={section} onSelect={go} theme={theme} onToggleTheme={toggleTheme} />
+      <SupportBanner onAsk={() => go('chat')} />
+      <main className="main-content">
+        <div className="page-container">
+          {section === 'home' && <HomePage onSelect={go} />}
+          {section === 'experience' && <ExperiencePage onSelect={go} />}
+          {section === 'skills' && <SkillsPage onSelect={go} />}
+          {section === 'achievements' && <AchievementsPage onSelect={go} />}
+          {section === 'chat' && <ResumeChat focused onBack={() => go('home')} />}
         </div>
-      </div>
+      </main>
+      {section !== 'chat' && <Footer onSelect={go} />}
+      <BottomTabs active={section} onSelect={go} />
     </div>
   );
 };

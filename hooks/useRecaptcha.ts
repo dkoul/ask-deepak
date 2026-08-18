@@ -123,7 +123,7 @@ export function useRecaptcha() {
 
       widgetIdRef.current = window.grecaptcha.render(node, {
         sitekey: config.siteKey,
-        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+        theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
         size: 'normal',
       });
       setWidgetReady(true);
