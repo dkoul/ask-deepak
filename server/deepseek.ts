@@ -1,4 +1,5 @@
 import { buildResumeContext } from '../data/resume';
+import { env } from './env';
 
 const SYSTEM_PROMPT = `You are Bubbly 🫧 — a chill AI assistant on Deepak Koul's official personal website. You know everything about Deepak and help people by answering their questions about him.
 
@@ -38,14 +39,14 @@ export async function callDeepSeek(
   messages: ChatMessage[],
   options: { maxTokens?: number } = {}
 ): Promise<string> {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = env('DEEPSEEK_API_KEY');
   if (!apiKey) {
     throw new Error('DEEPSEEK_API_KEY is not configured');
   }
 
-  const model = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
-  const maxTokens = options.maxTokens ?? Number(process.env.DEEPSEEK_MAX_TOKENS || 300);
-  const timeoutMs = Number(process.env.DEEPSEEK_TIMEOUT_MS || 15000);
+  const model = env('DEEPSEEK_MODEL') || 'deepseek-chat';
+  const maxTokens = options.maxTokens ?? Number(env('DEEPSEEK_MAX_TOKENS') || 300);
+  const timeoutMs = Number(env('DEEPSEEK_TIMEOUT_MS') || 15000);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

@@ -10,8 +10,17 @@
    ```
 3. Run locally:
    `npm run dev` — starts Vite (port 3000) + API server (port 3001)
-4. Production:
+4. Production (self-hosted):
    `npm run preview` — builds frontend and serves everything on port 3000
+
+Vercel production (`https://ask-deepak.vercel.app`) serves the Vite frontend from `dist/` and the Express API from `/api/chat`, `/api/config`, and `/api/health`. Set these **Vercel environment variables** (Production):
+
+- `DEEPSEEK_API_KEY`
+- `RECAPTCHA_SITE_KEY`
+- `RECAPTCHA_SECRET_KEY`
+- `RECAPTCHA_VERSION` (`v2` or `v3`)
+
+Redeploy after changing env vars. Confirm `/api/health` returns `"ok": true` and `"recaptchaEnabled": true`.
 
 ## API key security
 
@@ -49,7 +58,11 @@ The server verifies every token with Google before processing chat requests. Wit
 
 Local `npm run dev` sets `RECAPTCHA_BYPASS=1` so chat works on localhost even if your site key doesn’t list `localhost`. Production (`npm start` / `npm run preview`) still enforces captcha when keys are set.
 
-Add `localhost` (and your real domain) under **Domains** in the [reCAPTCHA admin console](https://www.google.com/recaptcha/admin) before deploying.
+Add these hostnames under **Domains** in the [reCAPTCHA admin console](https://www.google.com/recaptcha/admin) (v2 and v3 keys are not interchangeable):
+
+- `ask-deepak.vercel.app`
+- your custom domain, if you use one
+- `localhost` for local testing without `RECAPTCHA_BYPASS`
 
 Without `DEEPSEEK_API_KEY`, the chat falls back to keyword-matched answers from resume data (no API calls).
 

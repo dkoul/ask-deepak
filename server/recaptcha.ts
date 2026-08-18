@@ -1,18 +1,25 @@
 import type { RecaptchaConfig, RecaptchaVersion } from '../lib/recaptcha';
+import { env } from './env';
 
 const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
-const MIN_V3_SCORE = Number(process.env.RECAPTCHA_MIN_SCORE || 0.5);
+const MIN_V3_SCORE = Number(env('RECAPTCHA_MIN_SCORE') || 0.5);
+
+export type RecaptchaVerifyResult = {
+  ok: boolean;
+  error?: string;
+};
 
 export function isRecaptchaEnabled(): boolean {
-  if (process.env.RECAPTCHA_BYPASS === '1' || process.env.RECAPTCHA_BYPASS === 'true') {
+  const bypass = env('RECAPTCHA_BYPASS').toLowerCase();
+  if (bypass === '1' || bypass === 'true') {
     return false;
   }
-  return Boolean(process.env.RECAPTCHA_SECRET_KEY && process.env.RECAPTCHA_SITE_KEY);
+  return Boolean(env('RECAPTCHA_SECRET_KEY') && env('RECAPTCHA_SITE_KEY'));
 }
 
 export function getRecaptchaConfig(): RecaptchaConfig {
-  const siteKey = process.env.RECAPTCHA_SITE_KEY || '';
-  const version = (process.env.RECAPTCHA_VERSION || 'v2') as RecaptchaVersion;
+  const siteKey = env('RECAPTCHA_SITE_KEY');
+  const version = (env('RECAPTCHA_VERSION') || 'v2') as RecaptchaVersion;
 
   return {
     enabled: isRecaptchaEnabled() && siteKey.length > 0,
@@ -21,44 +28,78 @@ export function getRecaptchaConfig(): RecaptchaConfig {
   };
 }
 
-export async function verifyRecaptchaToken(token: string): Promise<boolean> {
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
+export async function verifyRecaptchaToken(
+  token: string,
+  remoteip?: string
+): Promise<RecaptchaVerifyResult> {
+  const secret = env('RECAPTCHA_SECRET_KEY');
   if (!secret) {
-    return true;
+    return { ok: true };
   }
 
   if (!token || typeof token !== 'string' || token.length < 10) {
-    return false;
+    return { ok: false, error: 'missing-token' };
   }
 
-  const version = (process.env.RECAPTCHA_VERSION || 'v2') as RecaptchaVersion;
+  const version = (env('RECAPTCHA_VERSION') || 'v2') as RecaptchaVersion;
 
-  const response = await fetch(RECAPTCHA_VERIFY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
+  try {
+    const params = new URLSearchParams({
       secret,
       response: token,
-    }),
-  });
+    });
+    if (remoteip && remoteip !== 'unknown') {
+      params.set('remoteip', remoteip);
+    }
 
-  if (!response.ok) {
-    return false;
+    const response = await fetch(RECAPTCHA_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+    });
+
+    if (!response.ok) {
+      console.error('reCAPTCHA siteverify HTTP error:', response.status);
+      return { ok: false, error: 'verify-http' };
+    }
+
+    const data = (await response.json()) as {
+      success?: boolean;
+      score?: number;
+      action?: string;
+      'error-codes'?: string[];
+    };
+
+    if (!data.success) {
+      const codes = data['error-codes'] ?? [];
+      console.error('reCAPTCHA verification failed:', codes.join(', ') || 'unknown');
+      if (codes.includes('timeout-or-duplicate')) {
+        return { ok: false, error: 'timeout-or-duplicate' };
+      }
+      return { ok: false, error: codes[0] || 'verify-failed' };
+    }
+
+    if (version === 'v3') {
+      const ok = typeof data.score === 'number' && data.score >= MIN_V3_SCORE;
+      if (!ok) {
+        console.error('reCAPTCHA v3 score too low:', data.score);
+        return { ok: false, error: 'low-score' };
+      }
+    }
+
+    return { ok: true };
+  } catch (err) {
+    console.error('reCAPTCHA siteverify request failed:', err);
+    return { ok: false, error: 'verify-network' };
   }
+}
 
-  const data = (await response.json()) as {
-    success?: boolean;
-    score?: number;
-    action?: string;
-  };
-
-  if (!data.success) {
-    return false;
+export function recaptchaUserMessage(error?: string): string {
+  if (error === 'timeout-or-duplicate') {
+    return 'Captcha expired. Please complete it again and retry.';
   }
-
-  if (version === 'v3') {
-    return typeof data.score === 'number' && data.score >= MIN_V3_SCORE;
+  if (error === 'missing-token') {
+    return 'Please complete the captcha and try again.';
   }
-
-  return true;
+  return 'Captcha verification failed. Please complete the captcha and try again.';
 }
