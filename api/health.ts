@@ -1,7 +1,11 @@
-export { default } from '../server/app';
+import { getHealthResult, jsonResponse } from '../server/httpApi';
 
-export const config = {
-  api: {
-    bodyParser: false,
+export function GET() {
+  return jsonResponse(getHealthResult());
+}
+
+export default {
+  fetch() {
+    return GET();
   },
 };

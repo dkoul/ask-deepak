@@ -1,7 +1,11 @@
-export { default } from '../server/app';
+import { getConfigResult, jsonResponse } from '../server/httpApi';
 
-export const config = {
-  api: {
-    bodyParser: false,
+export function GET() {
+  return jsonResponse(getConfigResult());
+}
+
+export default {
+  fetch() {
+    return GET();
   },
 };
