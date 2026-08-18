@@ -10,12 +10,3 @@ export async function POST(request: Request) {
 
   return jsonResponse(await processChat(body, clientIpFromRequest(request)));
 }
-
-export default {
-  fetch(request: Request) {
-    if (request.method === 'POST') {
-      return POST(request);
-    }
-    return new Response('Method Not Allowed', { status: 405 });
-  },
-};
