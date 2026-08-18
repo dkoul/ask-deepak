@@ -245,10 +245,7 @@ export function ResumeChat({
 
       <div className="mt-auto shrink-0 space-y-1.5 p-3 pt-1">
         {showV2 && (
-          <div
-            ref={containerRef}
-            className="flex justify-center overflow-hidden rounded-control bg-inset py-1"
-          />
+          <div ref={containerRef} className="flex justify-center py-1" />
         )}
         {loadError && <p className="px-1 text-[11px] text-orange">{loadError}</p>}
         {captchaError && <p className="px-1 text-[11px] text-red">{captchaError}</p>}

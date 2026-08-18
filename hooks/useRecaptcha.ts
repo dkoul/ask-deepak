@@ -3,9 +3,16 @@ import type { RecaptchaConfig } from '../lib/recaptcha';
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`);
+    const existing = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
     if (existing) {
-      resolve();
+      if (window.grecaptcha) {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Failed to load reCAPTCHA')), {
+        once: true,
+      });
       return;
     }
 
@@ -16,6 +23,29 @@ function loadScript(src: string): Promise<void> {
     script.onload = () => resolve();
     script.onerror = () => reject(new Error('Failed to load reCAPTCHA'));
     document.head.appendChild(script);
+  });
+}
+
+function waitForGrecaptcha(timeoutMs = 10000): Promise<NonNullable<typeof window.grecaptcha>> {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+
+    const tryReady = () => {
+      if (window.grecaptcha?.ready) {
+        window.grecaptcha.ready(() => {
+          if (window.grecaptcha) resolve(window.grecaptcha);
+          else reject(new Error('reCAPTCHA missing after ready'));
+        });
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error('Timed out waiting for reCAPTCHA'));
+        return;
+      }
+      window.setTimeout(tryReady, 50);
+    };
+
+    tryReady();
   });
 }
 
@@ -31,7 +61,10 @@ export function useRecaptcha() {
 
     async function init() {
       try {
-        const response = await fetch('/api/config');
+        const response = await fetch('/api/config', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Config request failed (${response.status})`);
+        }
         const data = await response.json();
         const recaptcha = data.recaptcha as RecaptchaConfig;
 
@@ -49,15 +82,12 @@ export function useRecaptcha() {
         const scriptSrc =
           recaptcha.version === 'v3'
             ? `https://www.google.com/recaptcha/api.js?render=${recaptcha.siteKey}`
-            : 'https://www.google.com/recaptcha/api.js';
+            : 'https://www.google.com/recaptcha/api.js?render=explicit';
 
         await loadScript(scriptSrc);
+        await waitForGrecaptcha();
 
-        if (cancelled) return;
-
-        window.grecaptcha?.ready(() => {
-          if (!cancelled) setScriptReady(true);
-        });
+        if (!cancelled) setScriptReady(true);
       } catch {
         if (!cancelled) {
           setLoadError('Captcha failed to load');
@@ -75,8 +105,13 @@ export function useRecaptcha() {
 
   const containerRef = useCallback(
     (node: HTMLDivElement | null) => {
+      if (!node) {
+        widgetIdRef.current = null;
+        setWidgetReady(false);
+        return;
+      }
+
       if (
-        !node ||
         !config?.enabled ||
         config.version !== 'v2' ||
         !scriptReady ||
@@ -89,7 +124,7 @@ export function useRecaptcha() {
       widgetIdRef.current = window.grecaptcha.render(node, {
         sitekey: config.siteKey,
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-        size: 'compact',
+        size: 'normal',
       });
       setWidgetReady(true);
     },
@@ -101,15 +136,17 @@ export function useRecaptcha() {
     (!config?.enabled || config.version === 'v3' || widgetReady);
 
   const getToken = useCallback(async (): Promise<string | null> => {
-    if (!config?.enabled || !window.grecaptcha) {
+    if (!config?.enabled) {
       return null;
     }
 
+    const grecaptcha = await waitForGrecaptcha();
+
     if (config.version === 'v3') {
-      return window.grecaptcha.execute(config.siteKey, { action: 'chat' });
+      return grecaptcha.execute(config.siteKey, { action: 'chat' });
     }
 
-    const token = window.grecaptcha.getResponse(widgetIdRef.current ?? undefined);
+    const token = grecaptcha.getResponse(widgetIdRef.current ?? undefined);
     return token || null;
   }, [config]);
 
